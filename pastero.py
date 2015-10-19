@@ -21,6 +21,8 @@
 # IN THE SOFTWARE.
 
 # History:
+# 2015-10-19, Lucas Jiménez
+#     Version 0.4: Added --cmd and use hook_process_hashtable
 # 2015-10-05, Lucas Jiménez
 #     Version 0.3: Change paste provider
 # 2015-10-05, Lucas Jiménez
@@ -29,81 +31,97 @@
 #     Version 0.1: Initial release
 
 # TODO:
-# - Add a feature to recognize variabel path "~"
+# - Better language identifier. With a tuple with the most used languages
+# - As of now the script is a little dangerous because it allows user entry
+# - Hability to delete a URL, maybe with a list with the URL's
+# - Allow to use 'passworded' uploads
 
-SCRIPT_NAME    = "pastero"
-SCRIPT_AUTHOR  = "Lucas Jiménez"
-SCRIPT_VERSION = "0.3"
-SCRIPT_LICENSE = "MIT"
-SCRIPT_DESC    = "Upload snippets, text files, etc and return the URL"
+SCRIPT_NAME    = 'pastero'
+SCRIPT_AUTHOR  = 'Lucas Jiménez'
+SCRIPT_VERSION = '0.4'
+SCRIPT_LICENSE = 'MIT'
+SCRIPT_DESC    = 'Upload snippets, text files, etc and return the URL'
 
-PREFIX = "[pastero]"
+PREFIX = '[pastero]'
 
-SCRIPT_HELP = """Help:
-This script will do its best to automatically identify
-its filetype by the file extension. If the file doesn't have a file extension,
-then plain text is used and no syntax highlighting is activated.\n
-For the moment pastero doesn't accepts "~" as a path so you have
-to use /home/<user>/ instead of "~".\n
+SCRIPT_HELP = '''Help:
+This script will do its best to automatically identify the language of the file.
+If the file doesn't have a file extension, then plain text is used.\n
 Usage:
-/pastero <full_path_to_file>/<file_name>\n
-Example:
-Let's suppose you have a file called my_script.py somewhere in  your
-home folder, then you would do:
-/pastero /home/<user_name>/Documents/Scripts/my_script.py
-* This would upload my_script.py and return the URL."""
+/pastero <wherever_your_file_is>
+*** eg: /pastero ~/Documents/Scripts/my_script.py
+/pastero --cmd command
+*** eg: /pastero --cmd echo 'Hello, world' # Please be careful with this option.
+'''
 
+import_ok = True
 
 try:
     import weechat as w
     WEECHAT_RC_OK = w.WEECHAT_RC_OK
-    import_ok = True
 
 except ImportError:
-    print "This script must be run under WeeChat."
-    print "Get WeeChat now at: http://www.weechat.org/"
+    print 'This script must be run under WeeChat.'
+    print 'Get WeeChat now at: http://www.weechat.org/'
     import_ok = False
 
 
 def pastero_cmd_cb(data, buffer, args):
     global Ext
-    url = "https://ptpb.pw/"
-    paster = "curl -sSF c=@%s %s" % (args, url)
+    url = 'https://ptpb.pw/'
+    command = 'curl -sSF c=@- ' + url
 
-    if args.count(".") > 0:
-        Ext = args.split(".")
+    if args.count('.') > 0:
+        Ext = args.split('.')
         Ext.reverse()
     else:
-        Ext = " " # Ugly hack so Ext[0] doesn't complain in case is empty :>
+        Ext = ' ' # Ugly hack so Ext[0] doesn't complain in case is empty :>
 
-    if args != "":
-        w.hook_process(paster, 5 * 1000, "upload_cb", "")
+    if args != '':
+        sargs = args.split()
+        if sargs[0] == '--cmd':
+            if len(sargs) == 1:
+                w.prnt(w.current_buffer(),
+                       '%s\tPlease specify a command to run.' % PREFIX)
+            else:
+                sargs = ' '.join(sargs[1:])
+                command = ' '.join((sargs, '|', command))
+                w.hook_process_hashtable('sh',
+                                         {'arg1':'-c',
+                                          'arg2':command},
+                                         5 * 1000, 'printer_cb', '')
+        else:
+            command = ' '.join(('cat', sargs[0], '|', command))
+            w.hook_process_hashtable('sh',
+                                     {'arg1':'-c',
+                                      'arg2':command},
+                                     5 * 1000, 'printer_cb', '')
     else:
         w.prnt(w.current_buffer(),
-                     "%s\tPlease, specify a file to upload." % PREFIX)
+                     '%s\tPlease, specify a file to upload.' % PREFIX)
 
     return WEECHAT_RC_OK
 
 
-def upload_cb(data, command, return_code, out, err):
+def printer_cb(data, command, return_code, out, err):
     if return_code == w.WEECHAT_HOOK_PROCESS_ERROR:
-        w.prnt("", "Error with command %s" % command)
+        w.prnt('', 'Error with command %s in printer_cb' % command)
         return WEECHAT_RC_OK
 
-    if out != "":
+    if out != '':
         url = out.splitlines()
-        string = "Here is the " + url[4].rstrip() + "/" + Ext[0]
+        string = 'Here is the ' + url[4].rstrip() + '/' + Ext[0]
         w.command(w.current_buffer(), string)
 
-    if err != "":
-        w.prnt("", "stderr: %s" % err)
+    if err != '':
+        w.prnt('', 'stderr in function printer_cb: %s' % err)
 
     return WEECHAT_RC_OK
 
 
-if __name__ == "__main__" and import_ok:
+if __name__ == '__main__' and import_ok:
     if w.register(SCRIPT_NAME, SCRIPT_AUTHOR, SCRIPT_VERSION, SCRIPT_LICENSE,
-                  SCRIPT_DESC, "", ""):
+                  SCRIPT_DESC, '', ''):
         
-        w.hook_command(SCRIPT_NAME, SCRIPT_DESC, "",SCRIPT_HELP,
-                             "", "pastero_cmd_cb", "")
+        w.hook_command(SCRIPT_NAME, SCRIPT_DESC, '',SCRIPT_HELP,
+                             '', 'pastero_cmd_cb', '')
