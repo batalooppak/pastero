@@ -21,6 +21,8 @@
 # IN THE SOFTWARE.
 
 # History:
+# 2015-10-21, Lucas Jiménez
+#     Version 0.5: Clipboard feature added
 # 2015-10-19, Lucas Jiménez
 #     Version 0.4: Added --cmd and use hook_process_hashtable
 # 2015-10-05, Lucas Jiménez
@@ -65,6 +67,27 @@ except ImportError:
     print 'Get WeeChat now at: http://www.weechat.org/'
     import_ok = False
 
+import sys
+from subprocess import Popen, PIPE
+
+if sys.platform == "linux" or sys.platform == "freebsd":
+    system_clip = 'xclip'
+elif sys.platform == 'darwin':
+    system_clip = 'pbpaste'
+
+
+def f_input(file_in):
+    w.hook_process_hashtable('url:https://ptpb.pw/',
+                             {'postfields':'c='+file_in},
+                             5 * 1000, 'printer_cb', '')
+
+# Gets the system clipboard
+def get_clip_cmd():
+    p = Popen(system_clip, stdout=PIPE)
+    data = p.communicate()
+    rc = str(data[0])
+    return rc
+
 
 def pastero_cmd_cb(data, buffer, args):
     global Ext
@@ -79,7 +102,11 @@ def pastero_cmd_cb(data, buffer, args):
 
     if args != '':
         sargs = args.split()
-        if sargs[0] == '--cmd':
+
+        if sargs[0] == '--clip':
+            f_input(get_clip_cmd().strip())
+
+        elif sargs[0] == '--cmd':
             if len(sargs) == 1:
                 w.prnt(w.current_buffer(),
                        '%s\tPlease specify a command to run.' % PREFIX)
@@ -91,11 +118,7 @@ def pastero_cmd_cb(data, buffer, args):
                                           'arg2':command},
                                          5 * 1000, 'printer_cb', '')
         else:
-            command = ' '.join(('cat', sargs[0], '|', command))
-            w.hook_process_hashtable('sh',
-                                     {'arg1':'-c',
-                                      'arg2':command},
-                                     5 * 1000, 'printer_cb', '')
+            f_input(open(sargs[0], 'r').read())
     else:
         w.prnt(w.current_buffer(),
                      '%s\tPlease, specify a file to upload.' % PREFIX)
@@ -109,6 +132,7 @@ def printer_cb(data, command, return_code, out, err):
         return WEECHAT_RC_OK
 
     if out != '':
+        w.prnt(w.current_buffer(), '%s' % out )
         url = out.splitlines()
         string = 'Here is the ' + url[4].rstrip() + '/' + Ext[0]
         w.command(w.current_buffer(), string)
