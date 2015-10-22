@@ -11,13 +11,13 @@ Also it will do its best to recognize the file type based on the extension.
 
 ## Usage
 To upload a file:
->/pastero \<wherever_your_file_is\>
->*\*\*\* eg: /pastero ~/Documents/Scripts/my_script.py*
+>/pastero \<wherever_your_file_is\>  
+*\*\*\* eg: /pastero ~/Documents/Scripts/my_script.py*
 
 To run a command through pipes and upload the output:
->/pastero --cmd command
->*\*\*\* eg: /pastero --cmd tree \<some_directory\>*
+>/pastero --cmd command  
+>*\*\*\* eg: /pastero --cmd tree \<some_directory\>*  
 >\*\*\* eg: /pastero --cmd echo 'Hello, world' *Please be careful with this option.*
 
-To upload the clipboard do:
+To upload the clipboard do:  
 >/pastero --clip
