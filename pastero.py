@@ -22,7 +22,7 @@
 
 # History:
 # 2015-10-21, Lucas Jiménez
-#     Version 0.5: Clipboard feature added
+#     Version 0.5: Clipboard feature added and linux support
 # 2015-10-19, Lucas Jiménez
 #     Version 0.4: Added --cmd and use hook_process_hashtable
 # 2015-10-05, Lucas Jiménez
@@ -40,20 +40,24 @@
 
 SCRIPT_NAME    = 'pastero'
 SCRIPT_AUTHOR  = 'Lucas Jiménez'
-SCRIPT_VERSION = '0.4'
+SCRIPT_VERSION = '0.5'
 SCRIPT_LICENSE = 'MIT'
 SCRIPT_DESC    = 'Upload snippets, text files, etc and return the URL'
 
 PREFIX = '[pastero]'
 
-SCRIPT_HELP = '''Help:
+SCRIPT_HELP = '''Help
 This script will do its best to automatically identify the language of the file.
 If the file doesn't have a file extension, then plain text is used.\n
-Usage:
+Usage
+To upload a file do:
 /pastero <wherever_your_file_is>
 *** eg: /pastero ~/Documents/Scripts/my_script.py
+To run a command and upload the output do:
 /pastero --cmd command
 *** eg: /pastero --cmd echo 'Hello, world' # Please be careful with this option.
+To upload the content of your clipboard do:
+/pastero --clip
 '''
 
 import_ok = True
@@ -70,14 +74,16 @@ except ImportError:
 import sys
 from subprocess import Popen, PIPE
 
-if sys.platform == "linux" or sys.platform == "freebsd":
-    system_clip = 'xclip'
+url = 'https://ptpb.pw/'
+
+if 'linux' in sys.platform or 'bsd' in sys.platform:
+    system_clip = 'xclip', '-o'
 elif sys.platform == 'darwin':
     system_clip = 'pbpaste'
 
 
 def f_input(file_in):
-    w.hook_process_hashtable('url:https://ptpb.pw/',
+    w.hook_process_hashtable('url:'+url,
                              {'postfields':'c='+file_in},
                              5 * 1000, 'printer_cb', '')
 
@@ -85,13 +91,12 @@ def f_input(file_in):
 def get_clip_cmd():
     p = Popen(system_clip, stdout=PIPE)
     data = p.communicate()
-    rc = str(data[0])
-    return rc
+    output = str(data[0])
+    return output
 
 
 def pastero_cmd_cb(data, buffer, args):
     global Ext
-    url = 'https://ptpb.pw/'
     command = 'curl -sSF c=@- ' + url
 
     if args.count('.') > 0:
@@ -132,7 +137,6 @@ def printer_cb(data, command, return_code, out, err):
         return WEECHAT_RC_OK
 
     if out != '':
-        w.prnt(w.current_buffer(), '%s' % out )
         url = out.splitlines()
         string = 'Here is the ' + url[4].rstrip() + '/' + Ext[0]
         w.command(w.current_buffer(), string)
