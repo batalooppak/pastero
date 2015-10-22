@@ -5,19 +5,23 @@ don't flood the channels.
 Also it will do its best to recognize the file type based on the extension.
 
 ## Requirements
-For the moment it requires curl to upload the data.
-It has been tested in linux and OSX
-Please, use the newest weechat version. This script has been tested in weechat
-1.3.
+* curl
+* OSX or Linux
+* weechat >= 1.3
 
 ## Usage
 To upload a file:
-/pastero <wherever_your_file_is>
-*** eg: /pastero ~/Documents/Scripts/my_script.py
+
+\/pastero \<wherever_your_file_is\>
+
+\*\*\* eg: /pastero ~/Documents/Scripts/my_script.py
 
 To run a command through pipes and upload the output:
+
 /pastero --cmd command
-*** eg: /pastero --cmd echo 'Hello, world' # Please be careful with this option.
+
+\*\*\* eg: /pastero --cmd echo 'Hello, world' *Please be careful with this option.*
 
 To upload the clipboard do:
-/pastero --clip
+
+\/pastero --clip
