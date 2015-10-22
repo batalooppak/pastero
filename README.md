@@ -14,10 +14,10 @@ To upload a file:
 >/pastero \<wherever_your_file_is\>  
 >\*\*\* eg: /pastero ~/Documents/Scripts/my\_script.py
 
-To run a command through pipes and upload the output:
+To run a command through pipes and upload the output: *Be careful with this!*
 >/pastero --cmd command  
 >\*\*\* eg: /pastero --cmd tree \<some_directory\>  
->\*\*\* eg: /pastero --cmd echo 'Hello, world' *Please be careful with this option.
+>\*\*\* eg: /pastero --cmd echo 'Hello, world'
 
 To upload the clipboard do:  
 >/pastero --clip
